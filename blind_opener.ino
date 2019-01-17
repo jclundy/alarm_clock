@@ -1,8 +1,10 @@
 // Arduino Libraries:
 #include <LiquidCrystal.h>
 
-// custom definitions
+// Custom Libraries
 #include "Time.h"
+#include "button.h"
+
 typedef enum {
   DEFAULT_MODE,
   SET_TIME_MODE,
@@ -31,13 +33,17 @@ const int MOTOR_STEP_PIN            = 30,
 clock_mode_t current_mode = DEFAULT_MODE;
 clock_mode_t previous_mode = DEFAULT_MODE;
 
+// Global Variables
 Time time = Time(0);
 Time alarm_time = Time(DEFAULT_ALARM_TIME_MILLIS);
-bool setTimePinState = LOW;
-bool prevSetTimePinState = LOW;
-bool setTimeTransitionOccured = false;
-int setTimeButtonStateCounter = 0;
 
+Button setTimeButton = Button(SET_CLK_PIN, 10);
+Button setAlarmButton = Button(SET_ALARM_PIN, 10);
+Button hourIncrementButton = Button(HR_INC_PIN, 10);
+Button hourDecrementButton = Button(HR_DEC_PIN, 10);
+Button minuteIncrementButton = Button(MIN_INC_PIN, 10);
+Button minuteDecrementButton = Button(MIN_DEC_PIN, 10);
+ 
 void setup() {
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
@@ -63,22 +69,13 @@ String getTimeString(Time time) {
 void loop() {
   time.updateTime(millis());
 
-  if(digitalRead(SET_CLK_PIN) == LOW) {
-    setTimeButtonStateCounter ++;
-    if(setTimeButtonStateCounter > 10) {
-      prevSetTimePinState = setTimePinState;
-      setTimePinState = LOW;
-      setTimeButtonStateCounter = 0;  
-    }
-  } else {
-    setTimeButtonStateCounter--;
-    if(setTimeButtonStateCounter <= 0) {
-      prevSetTimePinState = setTimePinState;
-      setTimePinState = HIGH;
-      setTimeButtonStateCounter = 0;
-    }
-  }
-  if(setTimePinState == LOW) {
+  setTimeButton.updateButtonState();
+  hourIncrementButton.updateButtonState();
+  hourDecrementButton.updateButtonState();
+  minuteIncrementButton.updateButtonState();
+  minuteDecrementButton.updateButtonState();
+  
+  if(setTimeButton.getButtonState() == LOW) {
     current_mode = SET_TIME_MODE; 
   } else {
     current_mode = DEFAULT_MODE;
@@ -98,6 +95,10 @@ void loop() {
       lcd.print(alarmString);
 
   } else if(current_mode == SET_TIME_MODE) {
+      if(hourIncrementButton.isPushed()) {
+        
+      }
+    
       String textString = String("Set Time");
       lcd.setCursor(0, 0);
       lcd.print(textString);

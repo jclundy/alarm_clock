@@ -6,6 +6,10 @@ Time::Time(unsigned long millis)
 	setMillis(millis);
 }
 
+void Time::updateMillis() {
+  timeInMillis = timeInMillis % 1000 + seconds * 1000 + minutes * 1000 * 60 + hours * 1000 * 60 * 24;
+}
+
 void Time::setMillis(unsigned long millis) {
 	timeInMillis = millis;
 	timeInMillis %= MILLIS_PER_DAY;
@@ -18,13 +22,36 @@ void Time::setMillis(unsigned long millis) {
 }
 
 void Time::setHours(unsigned int new_hour) {
-	hours = new_hour;
-	timeInMillis += hours * SECONDS_PER_HOUR * MILLIS_PER_SECOND;
+	hours = new_hour % 24;
+	updateMillis();
 }
 
+void Time::addHour() {
+  hours += 1;
+  hours %= 24;
+  updateMillis();
+}
+
+void Time::subtractHour() {
+  hours --;
+  hours = (hours + 24) % 24;
+  updateMillis();
+}
+
+void Time::addMinute() {
+  hours += 1;
+  minutes %= 60;
+  updateMillis();
+}
+
+void Time::subtractMinute() {
+  minutes --;
+  minutes = (minutes + 60) % 60;
+  updateMillis();
+}
 void Time::setMinutes(unsigned int new_minutes) {
-	minutes = new_minutes;
-	timeInMillis += minutes * SECONDS_PER_MINUTE * MILLIS_PER_SECOND;
+	minutes = new_minutes % 60;
+	updateMillis();
 }
 
 void Time::updateTime(unsigned long newTickCount) {

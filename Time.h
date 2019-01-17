@@ -18,6 +18,9 @@ private:
     unsigned int minutes;
     unsigned int hours;
     unsigned int prevTickCount;
+
+    void updateMillis();
+
  
 public:
     Time(unsigned long timeInMillis);
@@ -29,8 +32,11 @@ public:
     int getHours() { return hours; }
     int getMinutes() {return minutes; }
     int getSeconds() { return seconds; }
+    void addHour();
+    void subtractHour();
+    void addMinute();
+    void subtractMinute();
     
-
     void updateTime(unsigned long millis);
 };
 
