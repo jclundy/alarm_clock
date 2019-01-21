@@ -9,7 +9,7 @@ class Button {
   public:
       Button(unsigned int buttonPin, int counterLimit);
       bool transitionOccured();
-      void updateButtonState();
+      void updateButtonState(bool pinRead);
       bool getButtonState();
       bool isPushed();
       bool isReleased();

@@ -5,18 +5,17 @@ bool Button::transitionOccured() {
   return buttonState != prevButtonState;
 }
 
-void Button::updateButtonState() {
-  if(digitalRead(buttonPin) == LOW) {
+void Button::updateButtonState(bool pinRead) {
+  prevButtonState = buttonState;
+  if(pinRead == LOW) {
     counter++;
     if(counter > counterUpperLimit) {
-      prevButtonState = buttonState;
       buttonState = LOW;
       counter = 0;  
     }
   } else {
     counter--;
     if(counter <= counterLowerLimit) {
-      prevButtonState = buttonState;
       buttonState = HIGH;
       counter = 0;
     }

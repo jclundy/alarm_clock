@@ -12,13 +12,19 @@ typedef enum {
   ALARM_MODE
 } clock_mode_t;
 
+typedef enum {
+  SELECT_SECONDS,
+  SELECT_MINUTES,
+  SELECT_HOURS
+} select_increment_t;
+
 // LCD interface pins
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Clock button pins
 const int SET_CLK_PIN     = 22,
-          SET_ALARM_PIN   = 23,
+          SELECT_INCREMENT_PIN   = 23,
           HR_INC_PIN      = 24,
           HR_DEC_PIN      = 25,
           MIN_INC_PIN     = 26,
@@ -32,24 +38,32 @@ const int MOTOR_STEP_PIN            = 30,
 
 clock_mode_t current_mode = DEFAULT_MODE;
 clock_mode_t previous_mode = DEFAULT_MODE;
+select_increment_t increment_selection = SELECT_HOURS;
 
 // Global Variables
 Time time = Time(0);
 Time alarm_time = Time(DEFAULT_ALARM_TIME_MILLIS);
 
-Button setTimeButton = Button(SET_CLK_PIN, 10);
-Button setAlarmButton = Button(SET_ALARM_PIN, 10);
-Button hourIncrementButton = Button(HR_INC_PIN, 10);
-Button hourDecrementButton = Button(HR_DEC_PIN, 10);
-Button minuteIncrementButton = Button(MIN_INC_PIN, 10);
-Button minuteDecrementButton = Button(MIN_DEC_PIN, 10);
+#define DEBOUNCE_COUNT 10
+
+Button setTimeButton = Button(SET_CLK_PIN, DEBOUNCE_COUNT);
+Button selectIncrementButton = Button(SELECT_INCREMENT_PIN, DEBOUNCE_COUNT);
+Button hourIncrementButton = Button(HR_INC_PIN, DEBOUNCE_COUNT);
+Button hourDecrementButton = Button(HR_DEC_PIN, DEBOUNCE_COUNT);
+Button minuteIncrementButton = Button(MIN_INC_PIN, DEBOUNCE_COUNT);
+Button minuteDecrementButton = Button(MIN_DEC_PIN, DEBOUNCE_COUNT);
  
 void setup() {
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   // Print a message to the LCD.
-  lcd.print("starting up");
+  lcd.clear();
   pinMode(SET_CLK_PIN, INPUT);
+  pinMode(SELECT_INCREMENT_PIN, INPUT);
+  pinMode(HR_INC_PIN, INPUT);
+  pinMode(HR_DEC_PIN, INPUT);
+  pinMode(MIN_INC_PIN, INPUT);
+  pinMode(MIN_DEC_PIN, INPUT);
 }
 
 String formatTimeValue(unsigned int timeValue) {
@@ -66,22 +80,39 @@ String getTimeString(Time time) {
   return formatTimeValue(time.getHours()) + String(":") + formatTimeValue(time.getMinutes()) + ":" + formatTimeValue(time.getSeconds());
 }
 
-void loop() {
-  time.updateTime(millis());
 
-  setTimeButton.updateButtonState();
-  hourIncrementButton.updateButtonState();
-  hourDecrementButton.updateButtonState();
-  minuteIncrementButton.updateButtonState();
-  minuteDecrementButton.updateButtonState();
-  
-  if(setTimeButton.getButtonState() == LOW) {
-    current_mode = SET_TIME_MODE; 
-  } else {
-    current_mode = DEFAULT_MODE;
+void loop() {
+  //if(current_mode != SET_TIME_MODE) {
+    time.updateTime(millis());  
+  //}
+
+  setTimeButton.updateButtonState(digitalRead(SET_CLK_PIN));
+  selectIncrementButton.updateButtonState(digitalRead(SELECT_INCREMENT_PIN));
+  hourIncrementButton.updateButtonState(digitalRead(HR_INC_PIN));
+  hourDecrementButton.updateButtonState(digitalRead(HR_DEC_PIN));
+
+  if(selectIncrementButton.isPushed()) {
+    if(increment_selection == SELECT_HOURS) {
+      increment_selection = SELECT_MINUTES;
+    } else if(increment_selection == SELECT_MINUTES) {
+      increment_selection = SELECT_SECONDS;
+    } else if (increment_selection == SELECT_SECONDS) {
+      increment_selection = SELECT_HOURS;
+    }
+  }
+
+  if(setTimeButton.isPushed()) {
+    if(current_mode == DEFAULT_MODE) {
+      current_mode = SET_TIME_MODE;
+    } else if(current_mode == SET_TIME_MODE) {
+      current_mode = SET_ALARM_MODE;
+    } else if (current_mode == SET_ALARM_MODE) {
+      current_mode = DEFAULT_MODE;
+    }
   }
 
   if(current_mode != previous_mode) {
+    previous_mode = current_mode;
     lcd.clear();
   }
   if (current_mode == DEFAULT_MODE) {
@@ -94,11 +125,76 @@ void loop() {
       lcd.setCursor(0, 1);
       lcd.print(alarmString);
 
-  } else if(current_mode == SET_TIME_MODE) {
+  } 
+  else if(current_mode == SET_ALARM_MODE) {
       if(hourIncrementButton.isPushed()) {
-        
+        switch(increment_selection) {
+          case SELECT_SECONDS:
+            alarm_time.addSecond();
+            break;
+          case SELECT_MINUTES:
+            alarm_time.addMinute();
+            break;
+          case SELECT_HOURS:
+            alarm_time.addHour();
+            break;
+          default:
+            break;
+        }
+      } else if(hourDecrementButton.isPushed()) {
+        switch(increment_selection) {
+          case SELECT_SECONDS:
+            alarm_time.subtractSecond();
+            break;
+          case SELECT_MINUTES:
+            alarm_time.subtractMinute();
+            break;
+          case SELECT_HOURS:
+            alarm_time.subtractHour();
+            break;
+          default:
+            break;
+        }
       }
-    
+
+
+      String textString = String("Set Alarm");
+      lcd.setCursor(0, 0);
+      lcd.print(textString);
+      String alarmString = String("Alarm: ") + getTimeString(alarm_time);
+      lcd.setCursor(0, 1);
+      lcd.print(alarmString);
+  }
+  else if(current_mode == SET_TIME_MODE) {
+            if(hourIncrementButton.isPushed()) {
+        switch(increment_selection) {
+          case SELECT_SECONDS:
+            time.addSecond();
+            break;
+          case SELECT_MINUTES:
+            time.addMinute();
+            break;
+          case SELECT_HOURS:
+            time.addHour();
+            break;
+          default:
+            break;
+        }
+      } else if(hourDecrementButton.isPushed()) {
+        switch(increment_selection) {
+          case SELECT_SECONDS:
+            time.subtractSecond();
+            break;
+          case SELECT_MINUTES:
+            time.subtractMinute();
+            break;
+          case SELECT_HOURS:
+            time.subtractHour();
+            break;
+          default:
+            break;
+        }
+      }
       String textString = String("Set Time");
       lcd.setCursor(0, 0);
       lcd.print(textString);
@@ -106,9 +202,6 @@ void loop() {
       // print the number of seconds since reset:
       lcd.setCursor(0, 1);
       lcd.print(timeString);
-  }
-  
-   previous_mode = current_mode;
-  
+  }  
   delay(10);
 }
