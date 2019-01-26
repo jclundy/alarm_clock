@@ -26,12 +26,10 @@ const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Clock button pins
-const int SET_CLK_PIN     = 22,
+const int SET_MODE_PIN     = 22,
           SELECT_INCREMENT_PIN   = 23,
-          HR_INC_PIN      = 24,
-          HR_DEC_PIN      = 25,
-          MIN_INC_PIN     = 26,
-          MIN_DEC_PIN     = 27;
+          INCREMENT_PIN      = 24,
+          DECREMENT_PIN      = 25;
 
 // Stepper motor pins
 const int MOTOR_STEP_PIN            = 30,
@@ -49,24 +47,20 @@ Time alarm_time = Time(DEFAULT_ALARM_TIME_MILLIS);
 
 #define DEBOUNCE_COUNT 4
 
-Button setTimeButton = Button(SET_CLK_PIN, DEBOUNCE_COUNT);
+Button setModeButton = Button(SET_MODE_PIN, DEBOUNCE_COUNT);
 Button selectIncrementButton = Button(SELECT_INCREMENT_PIN, DEBOUNCE_COUNT);
-Button hourIncrementButton = Button(HR_INC_PIN, DEBOUNCE_COUNT);
-Button hourDecrementButton = Button(HR_DEC_PIN, DEBOUNCE_COUNT);
-Button minuteIncrementButton = Button(MIN_INC_PIN, DEBOUNCE_COUNT);
-Button minuteDecrementButton = Button(MIN_DEC_PIN, DEBOUNCE_COUNT);
+Button incrementButton = Button(INCREMENT_PIN, DEBOUNCE_COUNT);
+Button decrementButton = Button(DECREMENT_PIN, DEBOUNCE_COUNT);
  
 void setup() {
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   // Print a message to the LCD.
   lcd.clear();
-  pinMode(SET_CLK_PIN, INPUT);
+  pinMode(SET_MODE_PIN, INPUT);
   pinMode(SELECT_INCREMENT_PIN, INPUT);
-  pinMode(HR_INC_PIN, INPUT);
-  pinMode(HR_DEC_PIN, INPUT);
-  pinMode(MIN_INC_PIN, INPUT);
-  pinMode(MIN_DEC_PIN, INPUT);
+  pinMode(INCREMENT_PIN, INPUT);
+  pinMode(DECREMENT_PIN, INPUT);
 }
 
 String formatTimeValue(unsigned int timeValue) {
@@ -89,10 +83,10 @@ void loop() {
     time.updateTime(millis());  
   }
 
-  setTimeButton.updateButtonState(digitalRead(SET_CLK_PIN));
+  setModeButton.updateButtonState(digitalRead(SET_MODE_PIN));
   selectIncrementButton.updateButtonState(digitalRead(SELECT_INCREMENT_PIN));
-  hourIncrementButton.updateButtonState(digitalRead(HR_INC_PIN));
-  hourDecrementButton.updateButtonState(digitalRead(HR_DEC_PIN));
+  incrementButton.updateButtonState(digitalRead(INCREMENT_PIN));
+  decrementButton.updateButtonState(digitalRead(DECREMENT_PIN));
 
   if(selectIncrementButton.isPushed()) {
     if(increment_selection == SELECT_HOURS) {
@@ -107,7 +101,7 @@ void loop() {
     }
   }
 
-  if(setTimeButton.isPushed()) {
+  if(setModeButton.isPushed()) {
     if(current_mode == DEFAULT_MODE) {
       current_mode = SET_TIME_MODE;
       increment_selection = SELECT_HOURS;
@@ -138,7 +132,7 @@ void loop() {
 
   } 
   else if(current_mode == SET_ALARM_MODE) {
-      if(hourIncrementButton.isPushed()) {
+      if(incrementButton.isPushed()) {
         switch(increment_selection) {
           case SELECT_SECONDS:
             alarm_time.addSecond();
@@ -152,7 +146,7 @@ void loop() {
           default:
             break;
         }
-      } else if(hourDecrementButton.isPushed()) {
+      } else if(decrementButton.isPushed()) {
         switch(increment_selection) {
           case SELECT_SECONDS:
             alarm_time.subtractSecond();
@@ -180,7 +174,7 @@ void loop() {
       lcd.blink();
   }
   else if(current_mode == SET_TIME_MODE) {
-            if(hourIncrementButton.isPushed()) {
+            if(incrementButton.isPushed()) {
         switch(increment_selection) {
           case SELECT_SECONDS:
             time.addSecond();
@@ -194,7 +188,7 @@ void loop() {
           default:
             break;
         }
-      } else if(hourDecrementButton.isPushed()) {
+      } else if(decrementButton.isPushed()) {
         switch(increment_selection) {
           case SELECT_SECONDS:
             time.subtractSecond();
