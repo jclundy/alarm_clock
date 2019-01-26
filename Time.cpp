@@ -42,6 +42,16 @@ void Time::setHours(unsigned int new_hour) {
 	hours = new_hour % 24;
 }
 
+void Time::setSeconds(unsigned int new_seconds) {
+  seconds = new_seconds % 60;
+  updateMillis();
+}
+
+void Time::setMinutes(unsigned int new_minutes) {
+  minutes = new_minutes % 60;
+  updateMillis();
+}
+
 void Time::addHour() {
   hours += 1;
   hours %=24;
@@ -85,11 +95,6 @@ void Time::subtractSecond() {
   }
   seconds %=60;
   updateMillis();
-}
-
-void Time::setMinutes(unsigned int new_minutes) {
-	minutes = new_minutes % 60;
-	updateMillis();
 }
 
 void Time::updateTime(unsigned long newTickCount) {

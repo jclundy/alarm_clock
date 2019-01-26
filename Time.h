@@ -28,15 +28,17 @@ private:
 public:
     Time(long timeInMillis);
 
-    void setMillis(unsigned long millis);
-    void setHours(unsigned int hours);
-    void setMinutes(unsigned int minutes);
-
-    void incrementMillis(unsigned long millis);
- 
     int getHours() { return hours; }
     int getMinutes() {return minutes; }
     int getSeconds() { return seconds; }
+    
+    void setMillis(unsigned long millis);
+    void setSeconds(unsigned int new_seconds);
+    void setHours(unsigned int new_hours);
+    void setMinutes(unsigned int new_minutes);
+    
+    void incrementMillis(unsigned long millis);
+    
     void addHour();
     void subtractHour();
     void addMinute();

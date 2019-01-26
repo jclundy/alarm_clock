@@ -1,6 +1,7 @@
 // Arduino Libraries:
 #include <LiquidCrystal.h>
-
+// Hardware Libraries
+#include "DS1307.h"
 // Custom Libraries
 #include "Time.h"
 #include "button.h"
@@ -43,9 +44,11 @@ select_increment_t increment_selection = SELECT_HOURS;
 unsigned int cursor_position = select_hours_cursor_position;
 // Global Variables
 Time time = Time(0);
+int rtc[7];
 Time alarm_time = Time(DEFAULT_ALARM_TIME_MILLIS);
 
 #define DEBOUNCE_COUNT 4
+#define USE_RTC
 
 Button setModeButton = Button(SET_MODE_PIN, DEBOUNCE_COUNT);
 Button selectIncrementButton = Button(SELECT_INCREMENT_PIN, DEBOUNCE_COUNT);
@@ -61,6 +64,14 @@ void setup() {
   pinMode(SELECT_INCREMENT_PIN, INPUT);
   pinMode(INCREMENT_PIN, INPUT);
   pinMode(DECREMENT_PIN, INPUT);
+
+#ifdef USE_RTC
+  // RTC code
+  DDRC|=_BV(2) |_BV(3);  // POWER:Vcc Gnd
+  PORTC |=_BV(3);  // VCC PINC3
+  RTC.SetOutput(DS1307_SQW32KHZ);
+  RTC.start();
+#endif
 }
 
 String formatTimeValue(unsigned int timeValue) {
@@ -80,7 +91,18 @@ String getTimeString(Time time) {
 
 void loop() {
   if(!((current_mode == SET_TIME_MODE) && (increment_selection == SELECT_SECONDS))) {
-    time.updateTime(millis());  
+    #ifdef USE_RTC
+      RTC.get(rtc,true);
+      int seconds = rtc[0];
+      int minutes = rtc[1];
+      int hours = rtc[2];
+
+      time.setSeconds(seconds);
+      time.setMinutes(minutes);
+      time.setHours(hours);
+    #else
+      time.updateTime(millis());
+    #endif
   }
 
   setModeButton.updateButtonState(digitalRead(SET_MODE_PIN));
@@ -106,10 +128,19 @@ void loop() {
       current_mode = SET_TIME_MODE;
       increment_selection = SELECT_HOURS;
       cursor_position = select_hours_cursor_position;
+      #ifdef USE_RTC
+      RTC.stop();
+      #endif
     } else if(current_mode == SET_TIME_MODE) {
       current_mode = SET_ALARM_MODE;
       increment_selection = SELECT_HOURS;
       cursor_position = select_hours_cursor_position;
+      #ifdef USE_RTC
+      RTC.set(DS1307_SEC,time.getSeconds());
+      RTC.set(DS1307_MIN,time.getMinutes());
+      RTC.set(DS1307_HR,time.getHours());
+      RTC.start();
+      #endif
     } else if (current_mode == SET_ALARM_MODE) {
       current_mode = DEFAULT_MODE;
       lcd.noBlink();
