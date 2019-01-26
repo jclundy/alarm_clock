@@ -18,6 +18,9 @@ typedef enum {
   SELECT_HOURS
 } select_increment_t;
 
+#define select_hours_cursor_position 8
+#define select_minutes_cursor_position 11
+#define select_seconds_cursor_position 14
 // LCD interface pins
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
@@ -39,12 +42,12 @@ const int MOTOR_STEP_PIN            = 30,
 clock_mode_t current_mode = DEFAULT_MODE;
 clock_mode_t previous_mode = DEFAULT_MODE;
 select_increment_t increment_selection = SELECT_HOURS;
-
+unsigned int cursor_position = select_hours_cursor_position;
 // Global Variables
 Time time = Time(0);
 Time alarm_time = Time(DEFAULT_ALARM_TIME_MILLIS);
 
-#define DEBOUNCE_COUNT 10
+#define DEBOUNCE_COUNT 4
 
 Button setTimeButton = Button(SET_CLK_PIN, DEBOUNCE_COUNT);
 Button selectIncrementButton = Button(SELECT_INCREMENT_PIN, DEBOUNCE_COUNT);
@@ -82,9 +85,9 @@ String getTimeString(Time time) {
 
 
 void loop() {
-  //if(current_mode != SET_TIME_MODE) {
+  if(!((current_mode == SET_TIME_MODE) && (increment_selection == SELECT_SECONDS))) {
     time.updateTime(millis());  
-  //}
+  }
 
   setTimeButton.updateButtonState(digitalRead(SET_CLK_PIN));
   selectIncrementButton.updateButtonState(digitalRead(SELECT_INCREMENT_PIN));
@@ -94,20 +97,28 @@ void loop() {
   if(selectIncrementButton.isPushed()) {
     if(increment_selection == SELECT_HOURS) {
       increment_selection = SELECT_MINUTES;
+      cursor_position = select_minutes_cursor_position;
     } else if(increment_selection == SELECT_MINUTES) {
       increment_selection = SELECT_SECONDS;
+      cursor_position = select_seconds_cursor_position;
     } else if (increment_selection == SELECT_SECONDS) {
       increment_selection = SELECT_HOURS;
+      cursor_position = select_hours_cursor_position;
     }
   }
 
   if(setTimeButton.isPushed()) {
     if(current_mode == DEFAULT_MODE) {
       current_mode = SET_TIME_MODE;
+      increment_selection = SELECT_HOURS;
+      cursor_position = select_hours_cursor_position;
     } else if(current_mode == SET_TIME_MODE) {
       current_mode = SET_ALARM_MODE;
+      increment_selection = SELECT_HOURS;
+      cursor_position = select_hours_cursor_position;
     } else if (current_mode == SET_ALARM_MODE) {
       current_mode = DEFAULT_MODE;
+      lcd.noBlink();
     }
   }
 
@@ -116,7 +127,7 @@ void loop() {
     lcd.clear();
   }
   if (current_mode == DEFAULT_MODE) {
-      String timeString = String("Time: ") + getTimeString(time);
+      String timeString = String("Time : ") + getTimeString(time);
       // print the number of seconds since reset:
       lcd.setCursor(0, 0);
       lcd.print(timeString);
@@ -164,6 +175,9 @@ void loop() {
       String alarmString = String("Alarm: ") + getTimeString(alarm_time);
       lcd.setCursor(0, 1);
       lcd.print(alarmString);
+      lcd.setCursor(cursor_position,1);
+      //lcd.cursor();
+      lcd.blink();
   }
   else if(current_mode == SET_TIME_MODE) {
             if(hourIncrementButton.isPushed()) {
@@ -198,10 +212,13 @@ void loop() {
       String textString = String("Set Time");
       lcd.setCursor(0, 0);
       lcd.print(textString);
-      String timeString = String("Time: ") + getTimeString(time);
+      String timeString = String("Time : ") + getTimeString(time);
       // print the number of seconds since reset:
       lcd.setCursor(0, 1);
       lcd.print(timeString);
+      lcd.setCursor(cursor_position,1);
+      //lcd.cursor();
+      lcd.blink();
   }  
   delay(10);
 }
