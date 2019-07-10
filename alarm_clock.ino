@@ -10,9 +10,10 @@ typedef enum {
   DEFAULT_MODE,
   SET_TIME_MODE,
   SET_ALARM_MODE,
+  LED_ON_MODE,
   ALARM_MODE
 } clock_mode_t;
-
+ 
 typedef enum {
   SELECT_SECONDS,
   SELECT_MINUTES,
@@ -22,33 +23,32 @@ typedef enum {
 #define select_hours_cursor_position 8
 #define select_minutes_cursor_position 11
 #define select_seconds_cursor_position 14
+
+#define LIGHT_TURN_ON_DURATION_SECONDS 1800 // in seconds
+#define MIN_PWM 10 // tbd
+#define MAX_PWM 255
 // LCD interface pins
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // Clock button pins
-const int SET_MODE_PIN     = 22,
-          SELECT_INCREMENT_PIN   = 23,
-          INCREMENT_PIN      = 24,
-          DECREMENT_PIN      = 25;
-
-// Stepper motor pins
-const int MOTOR_STEP_PIN            = 30,
-          MOTOR_DIR_PIN             = 31,
-          MOTOR_LIMIT_SWITCH_PIN_1  = 32,
-          MOTOR_LIMIT_SWITCH_PIN_2  = 33;
+const int SET_MODE_PIN     = 8,
+          SELECT_INCREMENT_PIN   = 13,
+          INCREMENT_PIN      = 6,
+          DECREMENT_PIN      = 7;
 
 clock_mode_t current_mode = DEFAULT_MODE;
 clock_mode_t previous_mode = DEFAULT_MODE;
 select_increment_t increment_selection = SELECT_HOURS;
 unsigned int cursor_position = select_hours_cursor_position;
+const int ledPin = 9;
 // Global Variables
 Time time = Time(0);
 int rtc[7];
 Time alarm_time = Time(DEFAULT_ALARM_TIME_MILLIS);
-
+bool alarm_reached = false;
 #define DEBOUNCE_COUNT 4
-#define USE_RTC
+//#define USE_RTC
 
 Button setModeButton = Button(SET_MODE_PIN, DEBOUNCE_COUNT);
 Button selectIncrementButton = Button(SELECT_INCREMENT_PIN, DEBOUNCE_COUNT);
@@ -72,6 +72,8 @@ void setup() {
   RTC.SetOutput(DS1307_SQW32KHZ);
   RTC.start();
 #endif
+
+analogWrite(ledPin, 0);
 }
 
 String formatTimeValue(unsigned int timeValue) {
@@ -142,7 +144,11 @@ void loop() {
       RTC.start();
       #endif
     } else if (current_mode == SET_ALARM_MODE) {
+      current_mode = LED_ON_MODE;
+      lcd.noBlink();
+    } else if (current_mode == LED_ON_MODE) {
       current_mode = DEFAULT_MODE;
+      alarm_reached = false;
       lcd.noBlink();
     }
   }
@@ -151,16 +157,42 @@ void loop() {
     previous_mode = current_mode;
     lcd.clear();
   }
-  if (current_mode == DEFAULT_MODE) {
+  if (current_mode == DEFAULT_MODE || current_mode == LED_ON_MODE) {
       String timeString = String("Time : ") + getTimeString(time);
       // print the number of seconds since reset:
       lcd.setCursor(0, 0);
       lcd.print(timeString);
-    
-      String alarmString = String("Alarm: ") + getTimeString(alarm_time);
+
+      // determine if alarm has been reached
+      long differenceInSeconds = getDifferenceInSeconds(time, alarm_time);
+      if(differenceInSeconds >= 0 && differenceInSeconds <= 3) {
+        current_mode = LED_ON_MODE;
+        alarm_reached = true;
+      }
+
+      String alarmString;
+      if(current_mode == LED_ON_MODE) {
+        float intensity = 255;
+        if(alarm_reached) {
+          if(differenceInSeconds > LIGHT_TURN_ON_DURATION_SECONDS) {
+            differenceInSeconds = LIGHT_TURN_ON_DURATION_SECONDS;
+          }
+          intensity = (differenceInSeconds / (float) LIGHT_TURN_ON_DURATION_SECONDS) * MAX_PWM; // should go from 0 - 100 percent in half an hour
+          if(intensity == 0) {
+            intensity = 1;
+          }
+        }
+        analogWrite(ledPin, (int) intensity);
+        alarmString = String("Lamp on: ") + String(((int)intensity));
+      } else {
+        alarmString = String("Alarm: ") + getTimeString(alarm_time);
+        analogWrite(ledPin, 0);
+      }
+
+      
       lcd.setCursor(0, 1);
       lcd.print(alarmString);
-
+ 
   } 
   else if(current_mode == SET_ALARM_MODE) {
       if(incrementButton.isPushed()) {
@@ -245,5 +277,5 @@ void loop() {
       //lcd.cursor();
       lcd.blink();
   }  
-  delay(10);
+  //delay(10);
 }

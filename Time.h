@@ -28,6 +28,7 @@ private:
 public:
     Time(long timeInMillis);
 
+    unsigned long getMilliseconds() { return milliSeconds; }
     int getHours() { return hours; }
     int getMinutes() {return minutes; }
     int getSeconds() { return seconds; }
@@ -48,5 +49,7 @@ public:
     
     void updateTime(unsigned long millis);
 };
+// utility functions
+long getDifferenceInSeconds(Time time1, Time time2);
 
 #endif

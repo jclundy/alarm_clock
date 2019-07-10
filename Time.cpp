@@ -23,7 +23,7 @@ void Time::setMillis(unsigned long millis) {
 
 void Time::incrementMillis(unsigned long millis) {
   milliSeconds += millis;
-  if(milliSeconds > 1000) {
+  if(milliSeconds >= 1000) {
     seconds++;
   }
   if(seconds > 59) {
@@ -105,3 +105,11 @@ void Time::updateTime(unsigned long newTickCount) {
 	incrementMillis(ticksElapsed);
   prevTickCount = newTickCount;
 }
+
+long getDifferenceInSeconds(Time time1, Time time2) {
+  long time1_in_seconds = time1.getSeconds() + time1.getMinutes() * 60 + time1.getHours() * 3600;
+  long time2_in_seconds = time2.getSeconds() + time2.getMinutes() * 60 + time2.getHours() * 3600;
+  
+  return time1_in_seconds - time2_in_seconds;
+}
+
